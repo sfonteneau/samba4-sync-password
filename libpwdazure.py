@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import binascii
+import ldb
 from samba.auth import system_session
 from samba.credentials import Credentials
 from samba.param import LoadParm
 from samba.samdb import SamDB
-from samba.ndr import ndr_unpack
-from samba.dcerpc import drsblobs
 from ConfigParser import SafeConfigParser
+from samba.netcmd.user import GetPasswordCommand
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.common.credentials import UserPassCredentials
 from azure.graphrbac.models import PasswordProfile, UserUpdateParameters
@@ -70,6 +70,8 @@ def run():
     creds = Credentials()
     creds.guess(lp)
     samdb_loc = SamDB(url=param_samba['pathsamdb'], session_info=system_session(),credentials=creds, lp=lp)
+    testpawd = GetPasswordCommand()
+    testpawd.lp = lp
     allmail = {}
 
     # Search all users
@@ -87,14 +89,12 @@ def run():
 
         if str(pwdlastset) != dict_mail_pwdlastset.get(mail,''):
 
-            for user in samdb_loc.search(base=param_samba['basedn'], expression="(&(objectClass=user)(mail=*))", attrs=["mail","sAMAccountName","supplementalCredentials"]):
-                scb = ndr_unpack(drsblobs.supplementalCredentialsBlob, str(user["supplementalCredentials"]))
-                password = False
-                for p in scb.sub.packages:
-                    if p.name == 'Primary:CLEARTEXT' :
-                        password =  binascii.unhexlify(p.data).decode("utf16")
-                if not password:
+            for user in samdb_loc.search(base=param_samba['basedn'], expression="(&(objectClass=user)(mail=*))", attrs=["mail","sAMAccountName"]):
+                # Update if password different in dict mail pwdlastset
+                password = testpawd.get_account_attributes(samdb_loc,None,param_samba['basedn'],filter="(sAMAccountName=%s)" % (str(user["sAMAccountName"])),scope=ldb.SCOPE_SUBTREE,attrs=['virtualClearTextUTF8'],decrypt=True)
+                if not 'virtualClearTextUTF8' in password:
                     continue
+                password = str(password['virtualClearTextUTF8'])
                 update_password(mail, password, pwdlastset)
 
     #delete user found in dict mail pwdlastset but not found in samba

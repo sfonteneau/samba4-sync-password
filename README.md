@@ -7,6 +7,8 @@ Note that this solution requires you to enable plaintext passwords:
 
 samba-tool domain passwordsettings set --store-plaintext=on
 
+and check "Store password using reersible encryption" in user account
+
 Python Dependencies
 ===========
 

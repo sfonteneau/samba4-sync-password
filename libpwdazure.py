@@ -14,6 +14,7 @@ from azure.graphrbac import GraphRbacManagementClient
 import os
 import json
 import syslog
+import time
 
 ## Get confgiruation
 config = SafeConfigParser()
@@ -22,12 +23,29 @@ config.read('/etc/synchro-office-password/synchro.conf')
 ## Open connection to Syslog ##
 syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_LOCAL3)
 
-filename = config.get('common', 'path_pwdlastset_file')
-dict_mail_pwdlastset={}
-if os.path.isfile(filename):
-    dict_mail_pwdlastset = json.loads(open(filename,'r').read())
 
-def update_password(mail, pwd, pwdlastset):
+filename = config.get('common', 'path_pwdlastset_file')
+
+
+def disable_clear_password(pwd,uac,dn,sama,samdb_loc):
+    ldif_data = """dn: %s
+changetype: modify
+replace: userAccountControl
+userAccountControl: 512
+""" % (dn)
+    samdb_loc.modify_ldif(ldif_data)
+
+    samdb_loc.setpassword('(sAMAccountName=%s)' % sama,pwd)
+
+    ldif_data = """dn: %s
+changetype: modify
+replace: userAccountControl
+userAccountControl: %s
+""" % (dn,uac)
+    samdb_loc.modify_ldif(ldif_data)
+
+
+def update_password(mail,pwd,uac,dn,sama,samdb_loc):
     credentials = UserPassCredentials(
         config.get('azure', 'admin_email'), config.get('azure', 'admin_password'), resource="https://graph.windows.net"
     )
@@ -44,14 +62,11 @@ def update_password(mail, pwd, pwdlastset):
                     password=pwd,
                     force_change_password_next_login=False)
                     )                   
-
     try: 
         graphrbac_client.users.update(mail, param)
         service.users().update(userKey = mail, body=user).execute()
         syslog.syslog(syslog.LOG_WARNING, '[NOTICE] Updated password for %s' % mail)
-        dict_mail_pwdlastset[str(mail)]=str(pwdlastset)
-        open(filename,'w').write(json.dumps(dict_mail_pwdlastset))
-        #TODO CLEAR PASSWORD IN AD
+        disable_clear_password(pwd,uac,dn,sama,samdb_loc)
     except Exception as e:
         syslog.syslog(syslog.LOG_WARNING, '[ERROR] %s : %s' % (mail,str(e)))
     finally:
@@ -75,40 +90,21 @@ def run():
     allmail = {}
 
     # Search all users
-    for user in samdb_loc.search(base=param_samba['adbase'], expression="(&(objectClass=user)(mail=*))", attrs=["mail","sAMAccountName","pwdLastSet"]):
+    for user in samdb_loc.search(base=param_samba['adbase'], expression="(&(objectClass=user)(mail=*))", attrs=["mail","sAMAccountName",'userAccountControl','distinguishedName']):
         mail = str(user["mail"])
 
         #replace mail if replace_domain in config
         if config.getboolean('common', 'replace_domain'):
             mail = mail.split('@')[0] + '@' + config.get('common', 'domain')
-
-        pwdlastset = user.get('pwdLastSet','')
+        uac = user['userAccountControl']
+        username = str(user["sAMAccountName"])
+        dn = str(user["distinguishedName"])
 
         #add mail in all mail
         allmail[mail] = None
 
-        if str(pwdlastset) != dict_mail_pwdlastset.get(mail,''):
-
-            for user in samdb_loc.search(base=param_samba['basedn'], expression="(&(objectClass=user)(mail=*))", attrs=["mail","sAMAccountName"]):
-                # Update if password different in dict mail pwdlastset
-                password = testpawd.get_account_attributes(samdb_loc,None,param_samba['basedn'],filter="(sAMAccountName=%s)" % (str(user["sAMAccountName"])),scope=ldb.SCOPE_SUBTREE,attrs=['virtualClearTextUTF8'],decrypt=True)
-                if not 'virtualClearTextUTF8' in password:
-                    continue
-                password = str(password['virtualClearTextUTF8'])
-                update_password(mail, password, pwdlastset)
-
-    #delete user found in dict mail pwdlastset but not found in samba
-    listdelete = []
-    for user in dict_mail_pwdlastset :
-        if not user in allmail:
-            listdelete.append(user)
-
-    for user in listdelete:
-        del dict_mail_pwdlastset[user]
-
-    #write new json dict mail password
-    if listdelete:
-        open(filename,'w').write(json.dumps(dict_mail_pwdlastset))
-
-
-
+        password = testpawd.get_account_attributes(samdb_loc,None,param_samba['basedn'],filter="(sAMAccountName=%s)" % (username),scope=ldb.SCOPE_SUBTREE,attrs=['virtualClearTextUTF8'],decrypt=True)
+        if not 'virtualClearTextUTF8' in password:
+            continue
+        password = str(password['virtualClearTextUTF8'])
+        update_password(mail, password, uac,dn,username,samdb_loc)

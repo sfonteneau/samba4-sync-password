@@ -1,4 +1,4 @@
-Google Apps Password Sync for Samba4
+Windows Azure Password Sync for Samba4
 ===========
 
 Reads from your Samba4 AD and updates passwords in Azure AD

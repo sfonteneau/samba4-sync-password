@@ -10,6 +10,7 @@ from samba.auth import system_session
 from samba.credentials import Credentials
 from samba.param import LoadParm
 from samba.samdb import SamDB
+from samba.netcmd.user import GetPasswordCommand
 from ConfigParser import SafeConfigParser
 
 

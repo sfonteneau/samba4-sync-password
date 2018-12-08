@@ -45,7 +45,7 @@ userAccountControl: %s
 def update_password(mail,pwd,uac,dn,sama,samdb_loc):
     script = config.get('common', 'external_script_password')
     try:
-        subprocess.check_output('%s %s %s %s' % (script,sama,mail,pwd),shell=True)
+        subprocess.check_output('%s %s %s %s' % (script,sama,pwd,mail),shell=True)
         syslog.syslog(syslog.LOG_WARNING, '[NOTICE] Updated password for %s' % mail)
         disable_clear_password(pwd,uac,dn,sama,samdb_loc)
     except Exception as e:

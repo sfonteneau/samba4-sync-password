@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import time
-import libpwdazure
+import libsyncpassword
 import os.path
 import sys
 
@@ -18,13 +18,13 @@ class App():
         if len(sys.argv) >= 2:
           if sys.argv[1] == "start":
             if(os.path.exists(self.pidfile_path)):
-              print( "SyncPwdAzure is already running. stop|start|restart")
+              print( "SyncPassword is already running. stop|start|restart")
               sys.exit()
 
 
     def run(self):
         while True:
-            libpwdazure.run()
+            libsyncpassword.run()
             time.sleep(60)
 
 app = App()

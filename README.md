@@ -30,7 +30,7 @@ Installation
 
 	Note :
 
-	- The script gets the different arguments in this way:    script.sh samaccountname password  mail
+	- The script gets the different arguments in this way:    script.sh samaccountname password  mail  (password encode in base64)
 	- replace_domain : This makes it possible to replace the domain of the email field with another domain (that of the domain field of the configuration file)
 
 

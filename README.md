@@ -17,3 +17,20 @@ Python Dependencies
 - syslog
 - samba
 
+
+Installation
+==============
+- mkdir /opt/syncpassword/
+- mkdir /etc/syncpassword
+- cd /opt/syncpassword/
+- git clone https://github.com/sfonteneau/samba4-sync-password.git
+- cp -f syncho.conf /etc/syncpassword/
+- Configure synchro.conf with your samba settings 
+- Start sync with "python syncpassword.py start"
+
+	Note :
+
+	- The script gets the different arguments in this way:    script.sh samaccountname mail password
+	- replace_domain : This makes it possible to replace the domain of the email field with another domain (that of the domain field of the configuration file)
+
+

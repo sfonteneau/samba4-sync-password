@@ -6,6 +6,7 @@ import syslog
 import time
 import binascii
 import base64
+from Crypto import Random
 from samba.auth import system_session
 from samba.credentials import Credentials
 from samba.param import LoadParm
@@ -84,7 +85,8 @@ def run():
         #add mail in all mail
         allmail[mail] = None
 
-        password = testpawd.get_account_attributes(samdb_loc,None,param_samba['basedn'],filter="(sAMAccountName=%s)" % (username),scope=ldb.SCOPE_SUBTREE,attrs=['virtualClearTextUTF8'],decrypt=True)
+        Random.atfork()
+        password = testpawd.get_account_attributes(samdb_loc,None,param_samba['basedn'],filter="(sAMAccountName=%s)" % (username),scope=ldb.SCOPE_SUBTREE,attrs=['virtualClearTextUTF8'],decrypt=False)
 
         if not 'virtualClearTextUTF8' in password:
             continue

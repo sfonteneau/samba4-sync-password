@@ -24,8 +24,7 @@ Installation
 - mv samba4-sync-password /opt/syncpassword
 - mkdir /etc/syncpassword
 - cd /opt/syncpassword/
-- mkdir /etc/syncpassword/
-- cp -f syncho.conf /etc/syncpassword/
+- cp -f synchro.conf /etc/syncpassword/
 - Configure /etc/syncpassword/synchro.conf with your samba settings 
 - Start with "python3 /opt/syncpassword/syncpassword.py"
 

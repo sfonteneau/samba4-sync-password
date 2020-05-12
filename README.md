@@ -13,24 +13,23 @@ If the script returns a good exit code, the password in plain text in samba4 is 
 Python Dependencies
 ============================
 
-- daemon
 - syslog
 - samba
 
 
 Installation
 ==============
-- mkdir /opt/syncpassword/
+
+- git clone https://github.com/sfonteneau/samba4-sync-password.git
+- mv samba4-sync-password /opt/syncpassword
 - mkdir /etc/syncpassword
 - cd /opt/syncpassword/
-- git clone https://github.com/sfonteneau/samba4-sync-password.git
+- mkdir /etc/syncpassword/
 - cp -f syncho.conf /etc/syncpassword/
-- Configure synchro.conf with your samba settings 
-- Start sync with "python syncpassword.py start"
+- Configure /etc/syncpassword/synchro.conf with your samba settings 
+- Start with "python3 /opt/syncpassword/syncpassword.py"
 
-	Note :
+Note :
 
-	- The script gets the different arguments in this way:    script.sh samaccountname password  mail  (password encode in base64)
-	- replace_domain : This makes it possible to replace the domain of the email field with another domain (that of the domain field of the configuration file)
-
-
+    - The script gets the different arguments in this way:  script.sh mail password (password encode in base64)
+    - Create a systemctl service for the script

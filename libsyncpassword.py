@@ -26,6 +26,7 @@ config.read('/etc/syncpassword/synchro.conf')
 syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_LOCAL3)
 
 filename = config.get('common', 'path_pwdlastset_file')
+mailattr = config.get('common', 'mail_attr')
 
 if os.path.exists(filename):
     dict_mail_pwdlastset = json.loads(open(filename,'r').read())
@@ -83,9 +84,9 @@ def run():
     allmail = {}
 
     # Search all users
-    for user in samdb_loc.search(base=param_samba['adbase'], expression="(&(objectClass=user)(!(objectClass=computer)))", attrs=["mail","sAMAccountName",'userAccountControl','distinguishedName','pwdLastSet']):
+    for user in samdb_loc.search(base=param_samba['adbase'], expression="(&(objectClass=user)(!(objectClass=computer)))", attrs=[mailattr,"sAMAccountName",'userAccountControl','distinguishedName','pwdLastSet']):
         pwdlastset = user.get('pwdLastSet','')
-        mail = str(user.get('mail',''))
+        mail = str(user.get(mailattr,''))
 
         if str(pwdlastset) == dict_mail_pwdlastset.get(mail,''):
             continue
